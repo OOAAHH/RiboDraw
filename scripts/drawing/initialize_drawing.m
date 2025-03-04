@@ -18,6 +18,7 @@ function initialize_drawing(tag )
 %                RNA.pdb.motifs.txt    
 %
 % (C) R. Das, Stanford University, 2017
+% (C) Hao Sun, GuangZhou National Labortory, 2025
 
 %% 1. Read Input Files
 % -------------------------
