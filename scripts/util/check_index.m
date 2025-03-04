@@ -33,7 +33,7 @@ function check_index(base_pairs, resnum, chains)
 %                the FASTA file using resnum and chains. A warning is issued if any
 %                mismatch is found.
 %
-% (C) Hao Sun, GuangZhou national labortory, 2025
+% (C) Hao Sun, GuangZhou National Labortory, 2025
 
 %% 1. 从 base_pairs 中提取残基索引 / Extract indices from base_pairs
 bp_indices = {};  % 用于存储 base_pairs 中提取的 "chain,resnum" 字符串
