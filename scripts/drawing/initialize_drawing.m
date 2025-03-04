@@ -21,6 +21,11 @@ function initialize_drawing(tag )
 
 [sequence,resnum,chains,segid,non_standard_residues] = get_sequence( [tag,'.fasta']);
 base_pairs = read_base_pairs( [tag,'.base_pairs.txt'] ); % includes noncanonical pairs.
+
+% 检查索引信息和fasta中索引信息是否一致
+% check_index verifies that the residue indices extracted from 
+check_index(base_pairs, resnum, chains)
+
 base_stacks = read_base_stacks( [tag,'.stacks.txt'] ); % includes noncanonical pairs.
 other_contacts = read_other_contacts( [tag,'.other_contacts.txt'] );
 stems = read_stems( [tag,'.stems.txt'] );
