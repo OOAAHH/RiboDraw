@@ -1,3 +1,7 @@
+# 调整
+根据我个人的需求做了修改 增加了调试信息
+
+
 # RiboDraw
 Semiautomated layout of RNA tertiary structure diagrams
 
