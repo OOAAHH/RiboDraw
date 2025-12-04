@@ -9,6 +9,7 @@ function [sequence,resnum,chains,segid,non_standard_residues] = get_sequence( fa
 %
 % (C) R. Das, Stanford University, 2017
 
+disp(fasta_file);
 if ~exist( 'fasta_file' )
     sequence = get_sequence_from_drawing();
     return;

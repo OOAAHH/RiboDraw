@@ -30,8 +30,11 @@ tags = {};
 tag_ok = zeros(length(objnames),1);
 for n = 1:length( objnames )
 
-    % TODO actually check for headstring at beginning of tag rather than anywhere:
-    if isempty( strfind( objnames{n}, headstring ) ); continue; end;
+    % 只接受以 headstring 开头的 tag，避免误把例如
+    %  'TertiaryContact_Residue_A23_Residue_A26' 之类对象当作 Residue_
+    %  相关的 tag。
+    if length( objnames{n} ) < length( headstring ); continue; end;
+    if ~strcmp( objnames{n}(1:length(headstring)), headstring ); continue; end;
 
     if ~isempty( tailstring )
         if length( objnames{n} ) < length(tailstring ) | ...
