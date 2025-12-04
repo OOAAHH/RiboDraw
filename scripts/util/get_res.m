@@ -85,9 +85,27 @@ end
 
 reschain = {};
 % now sort based on order
+valid_idx = [];
 for i = 1:length( res_tags )
     residue = getappdata( gca, res_tags{i} );
-    reschain{i} = sprintf( '%2s:%s:%09d', residue.chain,residue.segid,residue.resnum );
+    % 防御式检查：确保这是一个真正的 residue 对象
+    if ~isstruct( residue ) || ...
+            ~isfield( residue, 'chain' ) || ...
+            ~isfield( residue, 'segid' ) || ...
+            ~isfield( residue, 'resnum' )
+        fprintf('[get_res] 警告：tag %s 不是包含 chain/segid/resnum 的残基对象，已跳过。\n', res_tags{i});
+        continue;
+    end
+    reschain{end+1} = sprintf( '%2s:%s:%09d', residue.chain,residue.segid,residue.resnum );
+    valid_idx(end+1) = i;
 end
+
+if isempty( reschain )
+    fprintf('[get_res] 警告：在 selection=%s 中未找到合法的残基对象。\n', selection);
+    res_tags = {};
+    obj_name = '';
+    return;
+end
+
 [~,idx] = sort( reschain );
-res_tags = res_tags( idx );
+res_tags = res_tags( valid_idx(idx) );
