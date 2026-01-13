@@ -24,3 +24,4 @@ plot_settings.show_ring_circles = 0;
 plot_settings.show_fill_circles = 0;
 plot_settings.chain_ticks = 0;
 plot_settings.tick_frequency = 10;
+plot_settings.show_chain_termini = 1;

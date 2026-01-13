@@ -52,6 +52,21 @@ for i = 1:length(resnum)
     residue.original_name = sequence(seqpos);
     residue.res_tag = res_tag;
     residue.linkers = {};
+
+    % Chain termini detection (5'/3') based on contiguous numbering.
+    % A terminus is any residue without a contiguous neighbor (same chain+segid,
+    % +/- 1 residue number) on one side. This handles gaps like A:1-10 A:20-30.
+    prev_is_contig = false;
+    next_is_contig = false;
+    if i > 1
+        prev_is_contig = (chains(i-1) == chain) && strcmp(segid{i-1}, seg) && (resnum(i-1) == res - 1);
+    end
+    if i < length(resnum)
+        next_is_contig = (chains(i+1) == chain) && strcmp(segid{i+1}, seg) && (resnum(i+1) == res + 1);
+    end
+    residue.is_five_prime  = ~prev_is_contig;
+    residue.is_three_prime = ~next_is_contig;
+
     setappdata( gca, res_tag, residue );
 end
 

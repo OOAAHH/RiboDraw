@@ -268,8 +268,103 @@ function h = draw_residue_for_helix( res_tag, helix_center, R, plot_settings )
         set( h, 'Position', pos );
         setappdata( residue.handle, 'res_tag', res_tag );
         residue = draw_tick( residue, plot_settings, R );
+        residue = draw_chain_termini_labels( residue, plot_settings, R );
         setappdata( gca, res_tag, residue );
     end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 辅助函数：绘制链起止(5'/3')标签
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function residue = draw_chain_termini_labels( residue, plot_settings, R )
+    if ~isfield( plot_settings, 'show_chain_termini' ) || ~plot_settings.show_chain_termini
+        residue = rmgraphics( residue, {'five_prime_label','three_prime_label','five_prime_tick_label','five_prime_tick_handle','three_prime_tick_label','three_prime_tick_handle'} );
+        return;
+    end
+
+    if ~isfield( residue, 'plot_pos' ) || isempty( residue.plot_pos )
+        return;
+    end
+
+    color = 'k';
+    if isfield( plot_settings, 'line_color' )
+        color = plot_settings.line_color;
+    end
+
+    % Use tick-style positioning so labels move like residue number ticks.
+    if ~isfield( residue, 'tickrot' ) || isempty( residue.tickrot ) || isnan( residue.tickrot )
+        residue = set_default_tickrot( residue );
+    end
+
+    show_five_prime  = isfield( residue, 'is_five_prime'  ) && residue.is_five_prime;
+    show_three_prime = isfield( residue, 'is_three_prime' ) && residue.is_three_prime;
+
+    five_theta = residue.tickrot;
+    three_theta = residue.tickrot;
+    if show_five_prime && show_three_prime
+        three_theta = mod( residue.tickrot + 180, 360 );
+    end
+
+    if show_five_prime
+        [residue.five_prime_tick_handle, residue.five_prime_tick_label] = draw_chain_terminus_tick( ...
+            residue, R, plot_settings, color, five_theta, 'five_prime_tick_handle', 'five_prime_tick_label', '5''' );
+    else
+        residue = rmgraphics( residue, {'five_prime_tick_label','five_prime_tick_handle'} );
+    end
+
+    if show_three_prime
+        [residue.three_prime_tick_handle, residue.three_prime_tick_label] = draw_chain_terminus_tick( ...
+            residue, R, plot_settings, color, three_theta, 'three_prime_tick_handle', 'three_prime_tick_label', '3''' );
+    else
+        residue = rmgraphics( residue, {'three_prime_tick_label','three_prime_tick_handle'} );
+    end
+
+    % Legacy cleanup (older label field names).
+    residue = rmgraphics( residue, {'five_prime_label','three_prime_label'} );
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 辅助函数：绘制一个末端 tick（细线 + 文本）
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [tick_handle, tick_label] = draw_chain_terminus_tick( residue, R, plot_settings, color, theta, handle_field, label_field, label_string )
+    if isfield( residue, handle_field ) && isvalid( getfield( residue, handle_field ) )
+        tick_handle = getfield( residue, handle_field );
+    else
+        tick_handle = plot( [0, 0], [0, 0], color, 'linewidth', 0.5, 'clipping', 'off' );
+    end
+
+    if isfield( residue, label_field ) && isvalid( getfield( residue, label_field ) )
+        tick_label = getfield( residue, label_field );
+    else
+        tick_label = text( 0, 0, label_string, ...
+            'fontsize', plot_settings.fontsize, ...
+            'horizontalalign', 'center', 'verticalalign', 'middle', ...
+            'clipping', 'off', 'color', color );
+    end
+
+    v = [cos(theta*pi/180), sin(theta*pi/180)] * R;
+    bp_spacing = plot_settings.bp_spacing;
+    nudge = bp_spacing/3;
+    if length( residue.name ) >= 3 && mod(theta,180) == 90
+        nudge = nudge + ( length( residue.name ) - 2 ) * bp_spacing/10;
+    end
+    nudge2 = nudge + bp_spacing/3;
+    tickpos1 = residue.plot_pos + v*nudge;
+    tickpos2 = residue.plot_pos + v*nudge2;
+    set( tick_handle, 'xdata', [tickpos1(1) tickpos2(1)] );
+    set( tick_handle, 'ydata', [tickpos1(2) tickpos2(2)] );
+
+    labelpos = residue.plot_pos + v*nudge2;
+    set( tick_label, 'position', labelpos );
+    if ( get(tick_label, 'fontsize') ~= plot_settings.fontsize )
+        set( tick_label, 'fontsize', plot_settings.fontsize );
+    end
+    set( tick_label, 'String', label_string );
+    set_text_alignment( tick_label, v );
+
+    setappdata( tick_label, 'res_tag', residue.res_tag );
+    if ~isappdata( tick_label, 'user_movefcn' )
+        draggable( tick_label, @move_tick, 'endfcn', @redraw_tick_res_and_helix );
+    end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 辅助函数：设置默认相对位置
