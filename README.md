@@ -1,3 +1,7 @@
+# 调整
+根据我个人的需求做了修改 增加了调试信息
+
+
 # RiboDraw
 Semiautomated layout of RNA tertiary structure diagrams
 
@@ -35,6 +39,8 @@ Follow the [**Tutorial**](tutorial/tutorial.md), which teaches you how to make a
 ![1gidA RiboDraw drawing](tutorial/images/1gidA_drawing.png)
 
 It takes about 30 minutes (or more, depending on how much you want to refine the drawing).
+
+Chinese tutorial & command reference (including common MATLAB debugging commands like `clear ...; rehash;`): [ribodraw_tutorial_zh.md](tutorial/ribodraw_tutorial_zh.md).
 
 A brief account of key steps in the tutorial is available on YouTube; click the thumbnail below!
 

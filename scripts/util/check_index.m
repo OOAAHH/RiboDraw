@@ -62,6 +62,7 @@ for i = 1:length(bp_indices)
         inconsistency_found = true;
     else
         fprintf('【调试】 索引 %s 在 FASTA 中存在。\n', idx);
+
     end
 end
 
