@@ -81,7 +81,6 @@ if ~plot_settings.show_helix_controls && isfield( residue, 'ligand_partners' ) r
 % if the residue was moved into its current helix, don't do anything...
 current_helix = getappdata( gca, residue.helix_tag );
 if ( check_in_helix_rectangle( residue, current_helix ) )
-    switched_helix = 1;
     return;
 end
 

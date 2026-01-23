@@ -440,6 +440,21 @@ edit draw_helix            % 打开检查是否有 <<<<<<< / ======= / >>>>>>>
 rg -n "<<<<<<<|=======|>>>>>>>" scripts
 ```
 
+### 10.4 把残基从 helix 拖出来后放不回去（“进不去 helix 方框”）
+
+现象：某个 residue 从 helix 附近拖出来后，再拖回 helix 的控制框矩形区域内，鼠标松开的一瞬间它会“弹回去”，看起来像是怎么也进不去方框。
+
+原因：这是 `redraw_res_and_helix` 在 mouse-up 回调里做“parent helix 重分配”判断时的一个逻辑问题——把“落回自己 helix 的矩形框内”也误判成了需要回弹的情况。
+
+解决：
+
+- 更新到包含修复的版本；或在本仓库里确保 `scripts/helix/redraw_res_and_helix.m` 已应用修复后，重启 MATLAB，或执行：
+
+```matlab
+clear redraw_res_and_helix;
+rehash;
+```
+
 ---
 
 ## 11. 全量函数索引在哪里？
