@@ -1,4 +1,4 @@
-function base_stacks = read_base_stacks( base_stacks_file )
+function base_stacks = read_base_stacks( base_stacks_file, residue_index )
 % base_stacks = read_base_stacks( base_stacks_file )
 %
 %  Read .base_stacks.txt file output by Rosetta rna_motif executable
@@ -32,17 +32,40 @@ function base_stacks = read_base_stacks( base_stacks_file )
 
 base_stacks = {};
 if ~exist( base_stacks_file, 'file' ) return; end;
+if nargin == 1
+    residue_index = [];
+end
 fid = fopen( base_stacks_file );
+if fid == -1
+    error('RiboDraw:AnnotationFileOpenFailed', ...
+        'Could not open stack file %s.', base_stacks_file);
+end
+cleanup = onCleanup(@() fclose(fid));
+line_number = 0;
 while ~feof( fid )
     line = fgetl( fid );
+    line_number = line_number + 1;
+    if ~ischar(line) || isempty(strtrim(line)); continue; end
     % C:1347 C:1599 W W C 
-    cols = strsplit( line, ' ' );
-    if length( cols ) >= 4       
-        [base_stack.resnum1,base_stack.chain1,base_stack.segid1] = get_one_resnum_from_tag( cols{1} );
-        [base_stack.resnum2,base_stack.chain2,base_stack.segid2] = get_one_resnum_from_tag( cols{2} );
+    cols = strsplit(strtrim(line));
+    if length(cols) < 4
+        if isempty(residue_index); continue; end
+        error('RiboDraw:InvalidStackLine', ...
+            '%s:%d expected 4 columns.', base_stacks_file, line_number);
+    end
+        [base_stack.resnum1,base_stack.chain1,base_stack.segid1,ok1] = get_one_resnum_from_tag( cols{1} );
+        [base_stack.resnum2,base_stack.chain2,base_stack.segid2,ok2] = get_one_resnum_from_tag( cols{2} );
+        if ~ok1 || ~ok2
+            error('RiboDraw:InvalidResidueIdentity', ...
+                '%s:%d contains an invalid residue tag.', base_stacks_file, line_number);
+        end
+        if ~isempty(residue_index)
+            [base_stack.chain1,base_stack.segid1,base_stack.resnum1] = resolve_residue_identity( ...
+                base_stack.chain1,base_stack.segid1,base_stack.resnum1,residue_index,base_stacks_file,line_number);
+            [base_stack.chain2,base_stack.segid2,base_stack.resnum2] = resolve_residue_identity( ...
+                base_stack.chain2,base_stack.segid2,base_stack.resnum2,residue_index,base_stacks_file,line_number);
+        end
         base_stack.side = cols{3};
         base_stack.orientation = cols{4};
         base_stacks = [base_stacks, base_stack];
-    end;
 end
-

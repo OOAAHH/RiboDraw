@@ -1,41 +1,73 @@
-function helices = read_stems( helix_file )
-% helices = read_stems( helix_file )
+function helices = read_stems(helix_file, residue_index)
+% READ_STEMS Read RiboDraw stem annotations.
 %
-%  Read .stems.txt file output by Rosetta rna_motif executable, which
-%      should include all directly stacked Watson-Crick/G*U wobble pairs with
-%      length of 2 base pairs or greater. 
+% helices = read_stems(file)
+% helices = read_stems(file, residue_index)
 %
-% TODO: probably should change the data structure so that it has only one chain, segid 
-%        for each strand of the helix.
-%
-% INPUT
-%
-%  helix_file = text file with lines like
-%
-%                      A:1-4  B:20-17
-%
-% OUTPUT
-%
-%  helices       = cell of struct()s with the same information and a helix_tag like 'Helix_A4'
-%
-% (C) R. Das, Stanford University, 2017.
+% A FASTA-derived residue index makes chain/segid/resnum resolution strict.
 
-fid = fopen( helix_file );
 helices = {};
-while ~feof( fid )
-    line = fgetl( fid );
-    % A:1-4 B:5-8 HelixX
-    cols = strsplit( line, ' ' );
-    if length( cols ) >= 2
-        [helix.resnum1,helix.chain1,helix.segid1] = get_resnum_from_tag( cols{1} );
-        [helix.resnum2,helix.chain2,helix.segid2] = get_resnum_from_tag( cols{2} );
-        if length( cols ) > 2 
-            helix.name = cols{3};
-        else
-            helix.name = '';
-            warning( 'WARNING! WARNING! No stem name found for %s/%s in file %. You might want to add a third field with names like P1, P1b, P2, etc.',cols{1},cols{2},helix_file);
+if ~exist(helix_file, 'file')
+    return;
+end
+if nargin == 1
+    residue_index = [];
+elseif nargin ~= 2
+    error('RiboDraw:InvalidReaderArguments', ...
+        'read_stems expects 1 or 2 input arguments.');
+end
+fid = fopen(helix_file);
+if fid == -1
+    error('RiboDraw:AnnotationFileOpenFailed', ...
+        'Could not open stem file %s.', helix_file);
+end
+cleanup = onCleanup(@() fclose(fid));
+
+line_number = 0;
+while ~feof(fid)
+    line = fgetl(fid);
+    line_number = line_number + 1;
+    if ~ischar(line) || isempty(strtrim(line))
+        continue;
+    end
+    cols = strsplit(strtrim(line));
+    if length(cols) < 2
+        error('RiboDraw:InvalidStemLine', ...
+            '%s:%d expected at least 2 columns.', helix_file, line_number);
+    end
+
+    clear helix
+    [helix.resnum1, helix.chain1, helix.segid1, ok1] = get_resnum_from_tag(cols{1});
+    [helix.resnum2, helix.chain2, helix.segid2, ok2] = get_resnum_from_tag(cols{2});
+    if ~ok1 || ~ok2
+        error('RiboDraw:InvalidResidueIdentity', ...
+            '%s:%d contains an invalid stem range.', helix_file, line_number);
+    end
+    if length(helix.resnum1) ~= length(helix.resnum2)
+        error('RiboDraw:UnequalStemStrands', ...
+            '%s:%d stem strands have unequal lengths (%d and %d).', ...
+            helix_file, line_number, length(helix.resnum1), length(helix.resnum2));
+    end
+
+    if ~isempty(residue_index)
+        for i = 1:length(helix.resnum1)
+            [helix.chain1(i), helix.segid1{i}, helix.resnum1(i)] = ...
+                resolve_residue_identity(helix.chain1(i), helix.segid1{i}, ...
+                helix.resnum1(i), residue_index, helix_file, line_number);
+            [helix.chain2(i), helix.segid2{i}, helix.resnum2(i)] = ...
+                resolve_residue_identity(helix.chain2(i), helix.segid2{i}, ...
+                helix.resnum2(i), residue_index, helix_file, line_number);
         end
-        helices = [helices,helix];
-        helix.helix_tag = sanitize_tag(sprintf('Helix_%s%s%d',helix.chain1(1),helix.segid1{1},helix.resnum1(1)));
-    end;
+    end
+
+    if length(cols) > 2
+        helix.name = cols{3};
+    else
+        helix.name = '';
+        warning('RiboDraw:UnnamedStem', ...
+            'No stem name found for %s/%s in file %s.', cols{1}, cols{2}, helix_file);
+    end
+    helix.helix_tag = sanitize_tag(sprintf('Helix_%s%s%d', ...
+        helix.chain1(1), helix.segid1{1}, helix.resnum1(1)));
+    helices = [helices, helix];
 end

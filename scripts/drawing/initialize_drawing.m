@@ -46,33 +46,32 @@ disp(['fasta文件: ', fasta_file]);
 disp(['base_pairs文件: ', base_pairs_file]);
 
 [sequence, resnum, chains, segid, non_standard_residues] = get_sequence(fasta_file);
+residue_index = build_residue_index(resnum, chains, segid);
 disp(tag);
 % 读取碱基对信息，包含非典型配对
-base_pairs = read_base_pairs(base_pairs_file, resnum, chains, segid);
-
-% 检查索引信息和fasta中索引信息是否一致
-check_index(base_pairs, resnum, chains)
+base_pairs = read_base_pairs(base_pairs_file, residue_index);
 
 % 读取碱基堆叠信息，包含非典型堆叠
-base_stacks = read_base_stacks(stacks_file);
+base_stacks = read_base_stacks(stacks_file, residue_index);
 
 % 读取其它接触信息（可能包括非标准的分子间接触）
-other_contacts = read_other_contacts(other_contacts_file);
+other_contacts = read_other_contacts(other_contacts_file, residue_index);
 
 % 读取 RNA 二级结构中茎（helix）部分的信息
-stems = read_stems(stems_file);
+stems = read_stems(stems_file, residue_index);
 
 % 读取配体信息，如小分子、离子等
-ligands = read_ligands(ligands_file);
+ligands = read_ligands(ligands_file, residue_index);
 
 % 读取结构模体（motifs）信息
-motifs = read_motifs(motifs_file);
+motifs = read_motifs(motifs_file, residue_index);
 
 % 如果碱基对信息为空但茎信息存在，则根据茎信息生成碱基对
 if length(base_pairs) == 0 & length(stems) > 0
     disp("碱基对信息为空但茎信息存在，根据茎信息生成碱基对");
     base_pairs = get_base_pairs_from_stems(stems);
 end
+validate_stem_annotations(stems, base_pairs);
 disp("1. 读取完成");
 
 %% 2. 设置绘图环境
@@ -120,6 +119,7 @@ setup_arrow_linkers(resnum, chains, segid);
 % 根据碱基对信息设置连接器，用于在图中显示碱基对之间的联系
 disp("4. 根据碱基对信息设置连接器，用于在图中显示碱基对之间的联系");
 setup_base_pair_linkers(base_pairs);
+validate_initialized_base_pairs(stems, base_pairs);
 
 % 根据碱基堆叠信息设置连接器，用于显示碱基堆叠的相互作用
 disp("4. 根据碱基堆叠信息设置连接器，用于显示碱基堆叠的相互作用");

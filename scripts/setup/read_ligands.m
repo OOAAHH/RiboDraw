@@ -1,4 +1,4 @@
-function ligands = read_ligands( ligand_file );
+function ligands = read_ligands( ligand_file, residue_index )
 % base_pairs = read_base_pairs( base_pairs_file )
 %
 %  Read .ligands.txt file output by Rosetta rna_motif executable, which
@@ -27,12 +27,27 @@ function ligands = read_ligands( ligand_file );
 
 ligands = {};
 if ~exist( ligand_file, 'file' ) return; end;
+if nargin == 1
+    residue_index = [];
+end
 fid = fopen( ligand_file );
+if fid == -1
+    error('RiboDraw:AnnotationFileOpenFailed', ...
+        'Could not open ligand file %s.', ligand_file);
+end
+cleanup = onCleanup(@() fclose(fid));
+line_number = 0;
 while ~feof( fid )
     line = fgetl( fid );
+    line_number = line_number + 1;
     % B     protein     R:6 R:8-9 R:11
-    if line == -1 ; break ; end
-    cols = strsplit( line, ' ' );
+    if ~ischar(line); break; end
+    if isempty(strtrim(line)); continue; end
+    cols = strsplit(strtrim(line));
+    if length(cols) < 3 && ~isempty(residue_index)
+        error('RiboDraw:InvalidLigandLine', ...
+            '%s:%d expected at least 3 columns.', ligand_file, line_number);
+    end
     if length( cols ) >= 3 
         clear ligand
         ligand.chain = cols{1}(1);
@@ -44,9 +59,12 @@ while ~feof( fid )
         [resnum,chains,segid] = get_resnum_from_tag( strjoin(cols(3:end)) );
         ligand.ligand_partners = {};
         for i = 1:length( resnum )
+            if ~isempty(residue_index)
+                [chains(i),segid{i},resnum(i)] = resolve_residue_identity( ...
+                    chains(i),segid{i},resnum(i),residue_index,ligand_file,line_number);
+            end
             ligand.ligand_partners = [ ligand.ligand_partners, sprintf( 'Residue_%s%s%d',  chains(i), segid{i}, resnum(i) ) ];
         end
         ligands = [ligands,ligand];
-    end;
+    end
 end
-
